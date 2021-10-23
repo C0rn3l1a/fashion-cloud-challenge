@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { BadRequestError, InternalServerError } from "../utils/error";
 import { CacheController } from "../controllers/cache.controller";
 
 export const router = Router();
@@ -11,7 +12,7 @@ router.delete('/:key', removeOne);
 
 
 async function getOne(req: Request, res: Response, next: NextFunction) {
-    if(!req.params.key) return next(new Error('no key provided')); // this should never happen
+    if(!req.params.key) return next(new BadRequestError('no key provided')); // this should never happen
     const cached_key = await CacheController.getByKey(req.params.key);
     res.json(cached_key);
 }
@@ -22,8 +23,8 @@ async function getAllKeys(req: Request, res: Response) {
 }
 
 async function upsertOne(req: Request, res: Response, next: NextFunction) {
-    if(!req.body.key) return next(new Error('no key provided'));
-    if(!req.body.value) return next(new Error('no value provided'));
+    if(!req.body.key) return next(new BadRequestError('no key provided'));
+    if(!req.body.value) return next(new BadRequestError('no value provided'));
     
     const key = req.body.key;
     const value = req.body.value;
@@ -38,16 +39,16 @@ async function removeAll(req: Request, res: Response, next: NextFunction) {
     if(removed) {
         res.json({ removed });
     } else {
-        next(new Error('could not remove'));
+        next(new InternalServerError('could not remove'));
     }
 }
 
 async function removeOne(req: Request, res: Response, next: NextFunction) {
-    if(!req.params.key) next(new Error('no key provided')); // this should never happen
+    if(!req.params.key) next(new BadRequestError('no key provided')); // this should never happen
     const removed = await CacheController.removeByKey(req.params.key);
     if(removed) {
         res.json();
     } else {
-        next(new Error('could not remove'));
+        next(new InternalServerError('could not remove'));
     }
 }

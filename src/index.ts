@@ -2,6 +2,7 @@ import express from "express";
 import body_parser from "body-parser";
 import dotenv from "dotenv";
 import { router } from "./routes";
+import { errorHandler } from "./utils/error";
 
 // initialize configuration
 dotenv.config();
@@ -16,10 +17,7 @@ app.use(body_parser.json());
 // Register all routes
 app.use(router);
 
-app.use((err: any, req: any, res: any, next: any) => {
-    console.log({err});
-    res.send('something happened');
-})
+app.use(errorHandler)
 
 app.listen( port, () => {
     // tslint:disable-next-line:no-console

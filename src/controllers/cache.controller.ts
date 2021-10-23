@@ -1,13 +1,13 @@
 import { createRandomString } from "../utils/string";
 import { CacheModel } from "../models/cache.model";
 import moment from "moment";
+import { logger } from "../utils/log";
 
 const TTL = process.env.TTL ?? 60000;
 export class CacheController {
     public static async getByKey(key: string): Promise<string> {
         try {
             const cache = await CacheModel.getByKey(key);
-            console.log({cache});
             if(cache) {
                 const is_expired = moment(cache.ttl).isBefore(moment());
                 if(is_expired) {
@@ -18,13 +18,14 @@ export class CacheController {
                     return cache.value;
                 }
             } else {
+                logger.info('Cache miss', { key });
                 const value = createRandomString(20);
                 const cache = await CacheModel.create(key, value);
-                console.log('created : ',{cache});
                 return cache.value;
             }
         } catch (error) {
-            console.log('controller',{error});
+            logger.error('Failed to get by key', { key, error });
+            throw new Error('Failed to get by key');
         }
     }
     
@@ -33,7 +34,8 @@ export class CacheController {
             const keys = await CacheModel.getKeys();
             return keys;
         } catch (error) {
-            console.log('controller',{error});
+            logger.error('Failed to get all keys', { error });
+            throw new Error('Failed to get all keys');
         }
     }
     
@@ -42,7 +44,8 @@ export class CacheController {
             const updated = await CacheModel.update(key, value);
             return updated;
         } catch (error) {
-            console.log('controller',{error});
+            logger.error('Failed to update or create', { key, value, error });
+            throw new Error('Failed to update or create');
         }
     }
     
@@ -51,7 +54,8 @@ export class CacheController {
             const updated = await CacheModel.remove(key);
             return updated;
         } catch (error) {
-            console.log('controller',{error});
+            logger.error('Failed to remove the key', { key, error });
+            throw new Error('Failed to remove the key');
         }
     }
     
@@ -60,7 +64,8 @@ export class CacheController {
             const updated = await CacheModel.remove({ all: true });
             return updated;
         } catch (error) {
-            console.log('controller',{error});
+            logger.error('Failed to remove all keys', { error });
+            throw new Error('Failed to remove all keys');
         }
     }
 }

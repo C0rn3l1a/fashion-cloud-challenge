@@ -31,23 +31,22 @@ export class CacheModel {
     }
 
     public static async getByKey(key: string): Promise<Cache> {
-        const cache_collection = await this.connect();
-
         try {
+            const cache_collection = await this.connect();
+
             const cache = await cache_collection.findOne({ key })
             await this.close();
             return cache;
         } catch (error) {
-            console.log({ error });
             await this.close();
-            return null;
+            throw error;
         }
     }
     
     public static async create(key: string, value: string): Promise<Cache> {
-        const cache_collection = await this.connect();
-
         try {
+            const cache_collection = await this.connect();
+
             const count = await cache_collection.count();
             
             if(count >= MAX_ENTRIES) {
@@ -61,15 +60,13 @@ export class CacheModel {
             return cache;
         } catch (error) {
             await this.close();
-            console.log({ error });
-            return error;
+            throw error;
         }
     }
 
     public static async update(key: string, value: string): Promise<Cache> {
-        const cache_collection = await this.connect();
-
         try {
+            const cache_collection = await this.connect();
             const ttl = moment().add(TTL,'milliseconds').toDate();
             const result = await cache_collection.update({ key }, { $set: { key, value, ttl } });
             await this.close();
@@ -81,50 +78,48 @@ export class CacheModel {
             }
         } catch (error) {
             await this.close();
-            console.log({ error });
-            return error;
+            throw error;
         }
     }
     
     public static async getKeys(): Promise<string[]> {
-        const cache_collection = await this.connect();
-
         try {
+            const cache_collection = await this.connect();
             const keys = await cache_collection.distinct('key');
             await this.close();
             return keys;
         } catch (error) {
-            console.log({ error });
-            return error;
+            await this.close();
+            throw error;
         }
     }
     
     public static async remove(key: string|{all:boolean}): Promise<number> {
-        const cache_collection = await this.connect();
-
         try {
+            const cache_collection = await this.connect();
             let result;
             if(typeof key === 'string') {
                 result = await cache_collection.remove({ key });
             } else if(key.all) {
                 result = await cache_collection.remove({});
-            } else return 0;
+            } else result = { deletedCount: 0 };
+            await this.close();
             return result.deletedCount;
         } catch (error) {
-            console.log({ error });
-            return error;
+            await this.close();
+            throw error;
         }
     }
     
     public static async updateTTL(key: string): Promise<void> {
-        const cache_collection = await this.connect();
-
         try {
-            await cache_collection.update({ key }, { $set: { ttl: moment().add(TTL,'milliseconds').toDate() } })
+            const cache_collection = await this.connect();
+            await cache_collection.update({ key }, { $set: { ttl: moment().add(TTL,'milliseconds').toDate() } });
+            await this.close();
             return;
         } catch (error) {
-            console.log({ error });
-            return error;
+            await this.close();
+            throw error;
         }
     }
 
