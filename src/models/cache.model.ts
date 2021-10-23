@@ -1,7 +1,8 @@
 import moment from 'moment';
 import monk, { IMonkManager } from 'monk';
 
-const TTL = process.env.TTL ?? 60000;
+const TTL = process.env.TTL ? parseInt(process.env.TTL) : 60000;
+const MAX_ENTRIES = process.env.MAX_ENTRIES ? parseInt(process.env.MAX_ENTRIES) : 4;
 
 export interface Cache {
     _id?: number;
@@ -20,6 +21,7 @@ export class CacheModel {
         
         // creates index if not exists
         await cache_collection.createIndex('key');
+        await cache_collection.createIndex('ttl');
 
         return cache_collection;
     }
@@ -46,6 +48,13 @@ export class CacheModel {
         const cache_collection = await this.connect();
 
         try {
+            const count = await cache_collection.count();
+            
+            if(count >= MAX_ENTRIES) {
+                const earliest: Cache = await cache_collection.findOne({},{ sort: { ttl: 1 } });
+                await cache_collection.remove({ key: earliest.key });
+            }
+
             const ttl = moment().add(TTL,'milliseconds').toDate();
             const cache = await cache_collection.insert({ key, value, ttl })
             await this.close();
