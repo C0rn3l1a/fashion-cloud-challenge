@@ -13,13 +13,22 @@ router.delete('/:key', removeOne);
 
 async function getOne(req: Request, res: Response, next: NextFunction) {
     if(!req.params.key) return next(new BadRequestError('no key provided')); // this should never happen
-    const cached_key = await CacheController.getByKey(req.params.key);
-    res.json(cached_key);
+    
+    try {
+        const cached_key = await CacheController.getByKey(req.params.key);
+        res.json(cached_key);
+    } catch (error) {
+        return next(new InternalServerError(error.message, error));
+    }
 }
 
-async function getAllKeys(req: Request, res: Response) {
-    const keys = await CacheController.getKeys();
-    res.json(keys);
+async function getAllKeys(req: Request, res: Response, next: NextFunction) {
+    try {
+        const keys = await CacheController.getKeys();
+        res.json(keys);
+    } catch (error) {
+        return next(new InternalServerError(error.message, error));
+    }
 }
 
 async function upsertOne(req: Request, res: Response, next: NextFunction) {
@@ -29,26 +38,38 @@ async function upsertOne(req: Request, res: Response, next: NextFunction) {
     const key = req.body.key;
     const value = req.body.value;
 
-    const updated = await CacheController.upsert(key, value);
+    try {
+        const updated = await CacheController.upsert(key, value);
+        res.json(updated);
+    } catch (error) {
+        return next(new InternalServerError(error.message, error));
+    }
 
-    res.json(updated);
 }
 
 async function removeAll(req: Request, res: Response, next: NextFunction) {
-    const removed = await CacheController.removeAllKeys();
-    if(removed) {
-        res.json({ removed });
-    } else {
-        next(new InternalServerError('could not remove'));
+    try {
+        const removed = await CacheController.removeAllKeys();
+        if(removed) {
+            res.json({ removed });
+        } else {
+            next(new InternalServerError('could not remove'));
+        }
+    } catch (error) {
+        return next(new InternalServerError(error.message, error));
     }
 }
 
 async function removeOne(req: Request, res: Response, next: NextFunction) {
     if(!req.params.key) next(new BadRequestError('no key provided')); // this should never happen
-    const removed = await CacheController.removeByKey(req.params.key);
-    if(removed) {
-        res.json();
-    } else {
-        next(new InternalServerError('could not remove'));
+    try {
+        const removed = await CacheController.removeByKey(req.params.key);
+        if(removed) {
+            res.json();
+        } else {
+            next(new InternalServerError('could not remove'));
+        }
+    } catch (error) {
+        return next(new InternalServerError(error.message, error));
     }
 }
