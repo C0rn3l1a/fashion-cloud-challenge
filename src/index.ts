@@ -1,4 +1,5 @@
 import express from "express";
+import body_parser from "body-parser";
 import dotenv from "dotenv";
 import { router } from "./routes";
 
@@ -8,6 +9,9 @@ dotenv.config();
 const app = express();
 
 const port = process.env.SERVER_PORT ?? 8080;
+
+app.use(body_parser.urlencoded());
+app.use(body_parser.json());
 
 // Register all routes
 app.use(router);
